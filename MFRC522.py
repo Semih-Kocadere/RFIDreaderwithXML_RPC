@@ -1,14 +1,14 @@
 import RPi.GPIO as GPIO
-import spi
+import spidev
 import signal
 import time
 
 
 class MFRC522:
     NRSTPD = 22
-
     MAX_LEN = 16
 
+    # MFRC522 commands
     PCD_IDLE = 0x00
     PCD_AUTHENT = 0x0E
     PCD_RECEIVE = 0x08
@@ -17,6 +17,7 @@ class MFRC522:
     PCD_RESETPHASE = 0x0F
     PCD_CALCCRC = 0x03
 
+    # MFRC522 PICC coomands
     PICC_REQIDL = 0x26
     PICC_REQALL = 0x52
     PICC_ANTICOLL = 0x93
@@ -31,10 +32,11 @@ class MFRC522:
     PICC_TRANSFER = 0xB0
     PICC_HALT = 0x50
 
+    # Status codes
     MI_OK = 0
     MI_NOTAGERR = 1
     MI_ERR = 2
-
+    # MFRC522 Registers
     Reserved00 = 0x00
     CommandReg = 0x01
     CommIEnReg = 0x02
@@ -105,10 +107,11 @@ class MFRC522:
 
     serNum = []
 
-    def __init__(self, dev='/dev/spidev0.0', spd=1000000):
-        self.dev_dictionary = spi.openSPI(device=dev, speed=spd)
+    def _init_(self, spd=1000000):
+        self.spi = spidev.SpiDev()
+        self.spi.open(0, 0)
+        self.spi.max_speed_hz = spd
         GPIO.setmode(GPIO.BOARD)
-        # Restart pinini belirtir.
         GPIO.setup(self.NRSTPD, GPIO.OUT)
         GPIO.output(self.NRSTPD, 1)
         self.MFRC522_Init()
@@ -117,10 +120,10 @@ class MFRC522:
         self.Write_MFRC522(self.CommandReg, self.PCD_RESETPHASE)
 
     def Write_MFRC522(self, addr, val):
-        spi.transfer(self.dev_dictionary, ((addr << 1) & 0x7E, val))
+        self.spi.xfer2([((addr << 1) & 0x7E), val])
 
     def Read_MFRC522(self, addr):
-        val = spi.transfer(self.dev_dictionary, (((addr << 1) & 0x7E) | 0x80, 0))
+        val = self.spi.xfer2([((addr << 1) & 0x7E) | 0x80, 0])
         return val[1]
 
     def SetBitMask(self, reg, mask):
@@ -139,6 +142,7 @@ class MFRC522:
     def AntennaOff(self):
         self.ClearBitMask(self.TxControlReg, 0x03)
 
+    # Communicate with the card.
     def MFRC522_ToCard(self, command, sendData):
         backData = []
         backLen = 0
