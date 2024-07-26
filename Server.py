@@ -24,6 +24,7 @@ def is_person_exists(rfid_id,current_date_time):
 
 #Listens the port 8000
 server = SimpleXMLRPCServer(("0.0.0.0", 8000))
+#This method is used to register a function that can be called remotely via XML-RPC.
 server.register_function(is_person_exists, "is_person_exists")
 
 # Run the server

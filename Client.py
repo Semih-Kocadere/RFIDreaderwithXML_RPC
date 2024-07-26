@@ -15,8 +15,9 @@ def end_program(signal, frame):
 signal.signal(signal.SIGINT, end_program)
 
 # Create an instance of the MFRC522 class
-rfid = MFRC522.MFRC522()
+rfid = MFRC522()
 
+#Create a ServerProxy
 server = ServerSpecs.get_xmlrpc_server_instance()
 
 try:
