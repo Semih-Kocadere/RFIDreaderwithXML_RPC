@@ -6,8 +6,8 @@ import spidev
 import time
 from datetime import datetime
 
-url = 'http://192.168.2.13:8069'
-db = 'v14_paye_20240226'
+url = 'urlForOdooServer'
+db = 'db_name'
 username = 'ik'
 password = "1234"
 
@@ -76,6 +76,7 @@ while continue_reading:
     if status == MIFAREReader.MI_OK:
         # Print UID
         rfid_id = "".join([str(x) for x in uid])
+        # Connect to Odoo server
 
         common = xmlrpc.client.ServerProxy('{}/xmlrpc/2/common'.format(url))
         common.version()
@@ -83,6 +84,7 @@ while continue_reading:
         models = xmlrpc.client.ServerProxy('{}/xmlrpc/2/object'.format(url))
 
         print(f"RFID ıd : {rfid_id}")
+        # Check access rights
 
         models.execute_kw(db, uid, password, 'hr.attendance', 'check_access_rights', ['read'],
                           {'raise_exception': False})
@@ -93,10 +95,12 @@ while continue_reading:
         models.execute_kw(db, uid, password, 'hr.employee', 'check_access_rights', ['read'], {'raise_exception': False})
 
         employee_id = models.execute_kw(db, uid, password, 'hr.employee', 'search', [[['pin', '=', rfid_id]]])
+        # if empleyee exist, check attendance
         if employee_id:
             check_attendance = models.execute_kw(db, uid, password, 'hr.attendance', 'search', [
                 [["employee_id", "=", employee_id], ["check_in", "!=", False], ["check_out", "=", False]]],
                                                  {"limit": 1})
+            # if check attendance exist, write check_out, else create attendance
             if check_attendance:
                 write_attendance = models.execute_kw(db, uid, password, 'hr.attendance', 'write', [[check_attendance], {
                     "check_out": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}])
